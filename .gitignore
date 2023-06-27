@@ -3,6 +3,12 @@ dist/
 yarn-error.log
 .vscode
 .DS_Store
+python_env/
+*.py[cod]
+__pycache__
+media/
+.env
+staticfiles/
 
 example/manual-testing/data/*
 !example/manual-testing/data/index.html

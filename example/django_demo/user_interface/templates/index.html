@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Django nsfwjs</title>
+    </head>
+    <body>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <input type="submit" value="Score">
+        </form>
+        {% if image %}
+            <img src="{{ image.file.url }}"
+                 width="500px"
+                 height="auto"
+                 alt="{{ image.file.name }}">
+            <ul>
+                {% for property in proparties %}<li>{{ property.property.name }}: {{ property.percent }}</li>{% endfor %}
+            </ul>
+        {% endif %}
+    </body>
+</html>
