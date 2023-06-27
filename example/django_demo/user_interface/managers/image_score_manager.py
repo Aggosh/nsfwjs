@@ -24,7 +24,7 @@ class ImageScoreManager:
 
         image_properties = []
 
-        for property in response:
+        for property in prediction:
             name = property.get("className")
             percent = property.get("probability")
             if name and percent:
