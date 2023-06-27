@@ -1,0 +1,99 @@
+version: "3.9"
+services:
+  django-nsfwjs:
+    build:
+      context: .
+      dockerfile: docker/django-app/Dockerfile
+    container_name: django-nsfwjs
+    restart: always
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "python3 manage.py makemigrations &&
+             python3 manage.py migrate &&
+             python3 manage.py collectstatic --no-input &&
+             daphne -b 0.0.0.0 -p 8000 django_nsfwjs.asgi:application"
+    volumes:
+      - .:/app
+      - static-volume:/app/staticfiles
+      - media-volume:/app/media
+    networks:
+      - nsfwjs-network
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_PORT=${POSTGRES_PORT}
+      - POSTGRES_HOST=nsfwjs-db
+      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
+      - DJANGO_DEBUG=${DJANGO_DEBUG}
+      - NODE_SERVER_URL=node-nsfwjs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+    depends_on:
+      - nsfwjs-db
+      - node-nsfwjs
+  node-nsfwjs:
+    build:
+      context: .
+      dockerfile: node-server/Dockerfile
+    container_name: node-nsfwjs
+    restart: always
+    ports:
+      - "8080:3333"
+    networks:
+      - nsfwjs-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+    command: >
+      sh -c "pnpm start"
+    platform: linux/arm64/v8
+  nsfwjs-nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    container_name: nsfwjs-nginx
+    restart: always
+    ports:
+      - 80:80
+    networks:
+      - nsfwjs-network
+    volumes:
+      - static-volume:/var/www/app/staticfiles
+      - media-volume:/var/www/app/media
+    depends_on:
+      - django-nsfwjs
+  nsfwjs-db:
+    image: postgres:15.1-alpine
+    container_name: nsfwjs-db
+    restart: always
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    ports:
+      - '${POSTGRES_PORT}:${POSTGRES_PORT}'
+    volumes:
+      - db:/var/lib/postgresql/data
+    networks:
+      - nsfwjs-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+volumes:
+  static-volume:
+  media-volume:
+  db:
+    driver: local
+networks:
+  nsfwjs-network:
+    external: true
+    driver: bridge
